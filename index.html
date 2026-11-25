@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prescription Validator</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, Arial, sans-serif; background: #f4f6f8; color: #17202a; }
+  .container { max-width: 760px; margin: 40px auto; padding: 24px; }
+  .card { background: white; border-radius: 14px; padding: 28px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  h1 { margin: 0 0 8px; font-size: 28px; }
+  .subtitle { margin: 0 0 24px; color: #5f6b76; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .eye { border: 1px solid #dfe4e8; border-radius: 10px; padding: 18px; }
+  .eye h2 { margin: 0 0 16px; font-size: 18px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  input { width: 100%; margin-top: 7px; padding: 10px 12px; border: 1px solid #cbd3da; border-radius: 7px; font-size: 15px; }
+  input:focus { outline: 2px solid #b9d7ff; border-color: #4285f4; }
+  button { margin-top: 22px; width: 100%; padding: 12px; border: 0; border-radius: 8px; background: #1f6feb; color: white; font-size: 16px; font-weight: 700; cursor: pointer; }
+  button:hover { background: #185abc; }
+  .result { margin-top: 20px; padding: 16px; border-radius: 8px; display: none; }
+  .valid { background: #e9f8ef; color: #176b38; border: 1px solid #b7e4c7; }
+  .invalid { background: #fff0f0; color: #a61b1b; border: 1px solid #f0b5b5; }
+  ul { margin: 8px 0 0; padding-left: 20px; }
+  .ranges { margin-top: 22px; font-size: 13px; color: #66727d; }
+  @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } .container { margin: 10px auto; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>Prescription Input Validator</h1>
+    <p class="subtitle">Validate left and right eye SPH, CYL, and Axis values against plausible ranges.</p>
+
+    <form id="prescriptionForm" novalidate>
+      <div class="grid">
+        <section class="eye">
+          <h2>Left Eye (OS)</h2>
+          <label>SPH
+            <input id="leftSph" type="number" step="0.25" placeholder="e.g. -2.50" />
+          </label>
+          <label>CYL
+            <input id="leftCyl" type="number" step="0.25" placeholder="e.g. -1.00" />
+          </label>
+          <label>Axis
+            <input id="leftAxis" type="number" step="1" placeholder="e.g. 90" />
+          </label>
+        </section>
+
+        <section class="eye">
+          <h2>Right Eye (OD)</h2>
+          <label>SPH
+            <input id="rightSph" type="number" step="0.25" placeholder="e.g. -1.75" />
+          </label>
+          <label>CYL
+            <input id="rightCyl" type="number" step="0.25" placeholder="e.g. -0.50" />
+          </label>
+          <label>Axis
+            <input id="rightAxis" type="number" step="1" placeholder="e.g. 180" />
+          </label>
+        </section>
+      </div>
+
+      <button type="submit">Validate Prescription</button>
+    </form>
+
+    <div id="result" class="result" role="status" aria-live="polite"></div>
+
+    <div class="ranges">
+      <strong>Validation ranges:</strong> SPH −20.00 to +20.00, CYL −6.00 to +6.00, Axis 1 to 180°.
+      Missing values are rejected. Values are validated per eye.
+    </div>
+  </div>
+</div>
+
+<script>
+const RULES = {
+  sph: { min: -20, max: 20, label: 'SPH' },
+  cyl: { min: -6, max: 6, label: 'CYL' },
+  axis: { min: 1, max: 180, label: 'Axis' }
+};
+
+function readNumber(id) {
+  const value = document.getElementById(id).value.trim();
+  return value === '' ? null : Number(value);
+}
+
+function validateEye(prefix, name) {
+  const values = {
+    sph: readNumber(prefix + 'Sph'),
+    cyl: readNumber(prefix + 'Cyl'),
+    axis: readNumber(prefix + 'Axis')
+  };
+  const errors = [];
+
+  for (const [field, value] of Object.entries(values)) {
+    const rule = RULES[field];
+    if (value === null || Number.isNaN(value)) {
+      errors.push(`${name} ${rule.label} is required and must be a number.`);
+      continue;
+    }
+    if (value < rule.min || value > rule.max) {
+      errors.push(`${name} ${rule.label} must be between ${rule.min} and ${rule.max}. Received ${value}.`);
+    }
+  }
+
+  return errors;
+}
+
+document.getElementById('prescriptionForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const errors = [
+    ...validateEye('left', 'Left eye'),
+    ...validateEye('right', 'Right eye')
+  ];
+  const result = document.getElementById('result');
+
+  if (errors.length) {
+    result.className = 'result invalid';
+    result.innerHTML = '<strong>Invalid prescription</strong><ul>' +
+      errors.map(error => `<li>${error}</li>`).join('') + '</ul>';
+  } else {
+    result.className = 'result valid';
+    result.innerHTML = '<strong>Prescription is valid.</strong><br>All six inputs are within the configured plausible ranges.';
+  }
+  result.style.display = 'block';
+});
+</script>
+</body>
+</html>
